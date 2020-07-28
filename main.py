@@ -76,11 +76,11 @@ def get_users(uid: UUID4 = Query(...)) -> dict:
 
 
 @app.post("/users/new", tags=["users"], response_description="User Created")
-def create_user(user: UserModel) -> Dict[str, Union[UUID4, UserModel]]:
+def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
     user_id = uuid.uuid4()
     user.password = hash_helper.encrypt(user.password)
     users[user_id] = user
-    return {"id": user_id, "user_data": user}
+    return {"id": user_id, "user_data": get_users(user_id)}
 
 
 @app.get("/", tags=["book"])
@@ -102,14 +102,14 @@ def read_book(book_id: UUID4) -> Dict[str, Any]:
 
 
 @app.post("/books/", response_description="Book added into the shelf.", tags=["book"])
-def add_book(book: Book = Body(...)) -> Book:
+def add_book(book: Book = Body(...)) -> Dict[str, Union[UUID4, Any]]:
     # Might later change it to form input when the frontend is ready.
     bid = uuid.uuid4()
     static_books_db[bid] = jsonable_encoder(book)
-    return static_books_db[bid]
+    return {"book_id": bid, "book_details": static_books_db[bid]}
 
 
-@app.patch("/book/{book_id}", response_description="Book updated.", tags=["book"])
+@app.put("/book/{book_id}", response_description="Book updated.", tags=["book"])
 def update_book(book_id: UUID4, book: Book) -> Book:
     stored_book_data = static_books_db[book_id]
     stored_book_data_model = Book(**stored_book_data)
