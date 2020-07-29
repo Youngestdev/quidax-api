@@ -1,6 +1,3 @@
-from test import name
-
-
 def user_helper(user):
     return {
         "id": user.id,
