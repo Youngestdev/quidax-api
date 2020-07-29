@@ -1,13 +1,17 @@
 import uuid
-from typing import Optional, List, Dict, Any, Tuple, Union
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body
+from typing import Dict, Any, Union
+from typing import Optional, List
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Depends
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, UUID4, HttpUrl, EmailStr, Field
 from passlib.context import CryptContext
-
+from pydantic import BaseModel, HttpUrl, Field, EmailStr
+from pydantic import UUID4
 
 app = FastAPI()
 hash_helper = CryptContext(schemes=["bcrypt"])
+
+static_books_db: dict = {}
+users: dict = {}
 
 
 class Book(BaseModel):
@@ -64,23 +68,38 @@ def user_helper(user):
     }
 
 
-static_books_db: dict = {}
-users: dict = {}
+def check_duplicate(username) -> bool:
+    for uid in users.keys():
+        _user = user_helper(users[uid])
+        if _user["username"] == username:
+            raise Exception("Username exists, do use another one.")
+    return False
 
 
 @app.get("/user/{uid}", tags=["users"], response_description="User retrieved")
-def get_users(uid: UUID4 = Query(...)) -> dict:
+def get_user(uid: UUID4 = Query(...)) -> dict:
     if uid in users:
         user = users[uid]
         return user_helper(user)
 
 
+@app.get("/users", tags=["users"], response_description="Users retrieved")
+def get_users() -> List:
+    user_list = []
+    for user_id in users.keys():
+        user = users[user_id]
+        user_list.append(user_helper(user))
+    return user_list
+
+
 @app.post("/users/new", tags=["users"], response_description="User Created")
 def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
-    user_id = uuid.uuid4()
-    user.password = hash_helper.encrypt(user.password)
-    users[user_id] = user
-    return {"id": user_id, "user_data": get_users(user_id)}
+    if not check_duplicate(user.username):
+        user_id = uuid.uuid4()
+        user.password = hash_helper.encrypt(user.password)
+        users[user_id] = user
+        return {"id": user_id, "user_data": get_user(user_id)}
+    return {}
 
 
 @app.get("/", tags=["book"])
@@ -91,7 +110,7 @@ def read_root():
 @app.get("/books", response_description="Books retrieved.", tags=["book"])
 def get_books(*, q: Optional[str] = None) -> dict:
     # Implement a search that filter books based on a passed query, if any.
-    return {"books": static_books_db}
+    return {"books": [static_books_db]}
 
 
 @app.get("/book/{book_id}", response_description="Book retrieved.", tags=["book"])
