@@ -1,12 +1,16 @@
 import uuid
+import secrets
 from typing import Dict, Any, Union
 from typing import Optional, List
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Depends
 from fastapi.encoders import jsonable_encoder
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
 from pydantic import UUID4
+from starlette import status
 
+from database.database import insert_user, retrieve_users
 from helper.helpers import user_helper, check_duplicate
 from helper.model import Book, UserModel
 from helper.responses import succeess_response
@@ -17,6 +21,19 @@ hash_helper = CryptContext(schemes=["bcrypt"])
 static_books_db: dict = {}
 users: dict = {}
 
+security = HTTPBasic()
+
+def validate_data(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, "Youngestdev")
+    correct_password = secrets.compare_digest(credentials.password, "password")
+
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"}
+        )
+    return True
 
 @app.get("/user/{id}", tags=["users"], response_description="User retrieved")
 def get_user(id: UUID4 = Query(...)) -> dict:
@@ -26,23 +43,15 @@ def get_user(id: UUID4 = Query(...)) -> dict:
 
 
 @app.get("/user", tags=["users"], response_description="Users retrieved")
-def get_users() -> Dict[str, Union[list, int, str]]:
-    user_list = []
-    for user_id in users.keys():
-        user = users[user_id]
-        user_list.append(user_helper(user))
-
-    return succeess_response(user_list, 200, "Users returned") if user_list else succeess_response(user_list)
+def get_users():
+    # I feel having this function looks odd tbh. I should refactor this after implementing database support completely TODO
+    return succeess_response(retrieve_users(), 200, "Users returned") if retrieve_users() else succeess_response()
 
 
 @app.post("/user/new", tags=["users"], response_description="User Created")
 def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
-    if not check_duplicate(users, user.username):
-        user.id = uuid.uuid4()
-        user.password = hash_helper.encrypt(user.password)
-        users[user.id] = user
-        return get_user(user.id)
-    return {}
+    user.password = hash_helper.encrypt(user.password)
+    return insert_user(jsonable_encoder(user))
 
 
 @app.get("/", tags=["book"])
@@ -56,7 +65,7 @@ def get_books(*, q: Optional[str] = None) -> dict:
     books = []
     for _id in static_books_db.keys():
         books.append(static_books_db[_id])
-    return succeess_response(books, 200, "Books retrieved") if books else succeess_response(books)
+    return succeess_response(books, 200, "Books retrieved") if books else succeess_response()
 
 
 @app.get("/book/{id}", response_description="Book retrieved.", tags=["book"])
