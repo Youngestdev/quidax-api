@@ -8,7 +8,7 @@ def succeess_response(data: list = [], code: int = 200, message: str = "Empty li
 
 def error_response(data: list = [], code: int = 400, message: str = "An error occured.") -> dict:
     return {
-        "data": data,
+        "error": data,
         "code": code,
         "message": message
     }

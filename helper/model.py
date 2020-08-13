@@ -34,7 +34,6 @@ class Book(BaseModel):
 
 
 class UserModel(BaseModel):
-    id: UUID4 = Field(default=None)
     username: str = Field(...)
     fullname: str = Field(...)
     email: EmailStr = Field(...)
