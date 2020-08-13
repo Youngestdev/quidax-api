@@ -3,6 +3,7 @@ import secrets
 from typing import Dict, Any, Union
 from typing import Optional, List
 
+from bson import ObjectId
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -10,10 +11,9 @@ from passlib.context import CryptContext
 from pydantic import UUID4
 from starlette import status
 
-from database.database import insert_user, retrieve_users
-from helper.helpers import user_helper, check_duplicate
-from helper.model import Book, UserModel
-from helper.responses import succeess_response
+from app.database.database import insert_user, retrieve_users, retrieve_user
+from app.helper.model import Book, UserModel
+from app.helper.responses import success_response
 
 app = FastAPI()
 hash_helper = CryptContext(schemes=["bcrypt"])
@@ -36,16 +36,13 @@ def validate_data(credentials: HTTPBasicCredentials = Depends(security)):
     return True
 
 @app.get("/user/{id}", tags=["users"], response_description="User retrieved")
-def get_user(id: UUID4 = Query(...)) -> dict:
-    if id in users:
-        user = users[id]
-        return user_helper(user)
-
+def get_user(id) -> dict:
+    return retrieve_user(ObjectId(id)) # Fix the ObjectID stuff!
 
 @app.get("/user", tags=["users"], response_description="Users retrieved")
 def get_users():
+    return retrieve_users()
     # I feel having this function looks odd tbh. I should refactor this after implementing database support completely TODO
-    return succeess_response(retrieve_users(), 200, "Users returned") if retrieve_users() else succeess_response()
 
 
 @app.post("/user/new", tags=["users"], response_description="User Created")
@@ -65,7 +62,7 @@ def get_books(*, q: Optional[str] = None) -> dict:
     books = []
     for _id in static_books_db.keys():
         books.append(static_books_db[_id])
-    return succeess_response(books, 200, "Books retrieved") if books else succeess_response()
+    return success_response(books, 200, "Books retrieved") if books else success_response()
 
 
 @app.get("/book/{id}", response_description="Book retrieved.", tags=["book"])

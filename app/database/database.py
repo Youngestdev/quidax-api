@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 
-from helper.helpers import user_helper
+from app.helper.helpers import user_helper
+from app.helper.responses import success_response
 
 client = MongoClient('localhost', 27018)
 
@@ -31,11 +32,18 @@ user_collection = database.users
 
 def insert_user(user_data):
     id = user_collection.insert(user_data)
-    return "Okay"
-
+    print("New user ID: ", id)
+    new_user = user_collection.find_one({"_id": id})
+    return success_response(user_helper(new_user), 200, "User successfully added into the database")
+#
 def retrieve_users():
     users = list(user_collection.find({}))
     userlist = []
     for user in users:
         userlist.append(user_helper(user))
-    return userlist
+    return success_response(userlist, 200, "Users retrieved.") if userlist else success_response()
+
+def retrieve_user(id):
+    user = user_collection.find_one({"_id": id})
+    print(user)
+    return success_response(user_helper(user), 200, "User Retrieved") if user else success_response()

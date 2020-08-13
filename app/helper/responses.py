@@ -1,4 +1,4 @@
-def succeess_response(data: list = [], code: int = 200, message: str = "Empty list returned") -> dict:
+def success_response(data: list = [], code: int = 200, message: str = "Empty list returned") -> dict:
     return {
         "data": data,
         "code": code,
