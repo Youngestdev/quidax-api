@@ -1,7 +1,6 @@
-import uuid
 import secrets
 from typing import Dict, Any, Union
-from typing import Optional, List
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Depends
@@ -11,9 +10,10 @@ from passlib.context import CryptContext
 from pydantic import UUID4
 from starlette import status
 
-from database.database import insert_user, retrieve_users, retrieve_user
+from database.database import insert_user, retrieve_users, retrieve_user, find_user, retrieve_books, retrieve_book, \
+    insert_book, remove_book
 from helper.model import Book, UserModel
-from helper.responses import success_response
+from helper.responses import success_response, error_response
 
 app = FastAPI()
 hash_helper = CryptContext(schemes=["bcrypt"])
@@ -42,44 +42,35 @@ def get_user(id) -> dict:
 @app.get("/user", tags=["users"], response_description="Users retrieved")
 def get_users():
     return retrieve_users()
-    # I feel having this function looks odd tbh. I should refactor this after implementing database support completely TODO
-
 
 @app.post("/user/new", tags=["users"], response_description="User Created")
 def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
+    if find_user(user.email):
+        return error_response("Email has been used to register", 409)
     user.password = hash_helper.encrypt(user.password)
     return insert_user(jsonable_encoder(user))
 
-
 @app.get("/", tags=["book"])
 def read_root():
-    return {"message": "Welcome to Quidax Book API"}
-
+    return {"message": "Welcome to Quidax Book API, use the /docs route,"}
 
 @app.get("/book", response_description="Books retrieved.", tags=["book"])
 def get_books(*, q: Optional[str] = None) -> dict:
     # Implement a search that filter books based on a passed query, if any.
-    books = []
-    for _id in static_books_db.keys():
-        books.append(static_books_db[_id])
-    return success_response(books, 200, "Books retrieved") if books else success_response()
+    return retrieve_books()
 
 
 @app.get("/book/{id}", response_description="Book retrieved.", tags=["book"])
-def read_book(id: UUID4) -> Dict[str, Any]:
-    if id not in static_books_db:
-        raise HTTPException(status_code=404, detail="Book is not in the shelf.")
-    return {"book": static_books_db[id]}
+def read_book(id) -> Dict[str, Any]:
+    return retrieve_book(id)
 
 
 @app.post("/book/", response_description="Book added into the shelf.", tags=["book"])
 def add_book(book: Book = Body(...)) -> Dict[str, Union[UUID4, Any]]:
     # Might later change it to form input when the frontend is ready.
-    book.id = uuid.uuid4()
-    static_books_db[book.id] = jsonable_encoder(book)
-    return static_books_db[book.id]
+    return insert_book(jsonable_encoder(book))
 
-
+# TODO:
 @app.put("/book/{id}", response_description="Book updated.", tags=["book"])
 def update_book(id: UUID4, book: Book) -> Book:
     stored_book_data = static_books_db[id]
@@ -91,8 +82,8 @@ def update_book(id: UUID4, book: Book) -> Book:
 
 
 @app.delete("/book/{id}", response_description="Book deleted.", tags=["book"])
-def delete_book(id: UUID4 = Query(...)) -> dict:
-    del static_books_db[id]
+def delete_book(id) -> dict:
+    remove_book(id)
     return {"message": "Book with id {} successfully deleted".format(id)}
 
 
@@ -102,6 +93,6 @@ or we might just use cloudinary to save the stress of uploading from the backend
 """
 
 
-@app.post("/upload", tags=["book"])
-def upload_book_cover(file: List[UploadFile] = File(...)) -> dict:
-    return {"file": [f.filename for f in file]}
+# @app.post("/upload", tags=["book"])
+# def upload_book_cover(file: List[UploadFile] = File(...)) -> dict:
+#     return {"file": [f.filename for f in file]}
