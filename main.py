@@ -11,9 +11,9 @@ from passlib.context import CryptContext
 from pydantic import UUID4
 from starlette import status
 
-from app.database.database import insert_user, retrieve_users, retrieve_user
-from app.helper.model import Book, UserModel
-from app.helper.responses import success_response
+from database.database import insert_user, retrieve_users, retrieve_user
+from helper.model import Book, UserModel
+from helper.responses import success_response
 
 app = FastAPI()
 hash_helper = CryptContext(schemes=["bcrypt"])

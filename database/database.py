@@ -1,11 +1,14 @@
 from pymongo import MongoClient
+from decouple import config
 
-from app.helper.helpers import user_helper
-from app.helper.responses import success_response
+from helper.helpers import user_helper
+from helper.responses import success_response
 
-client = MongoClient('localhost', 27018)
+MONGO_DEETS = config('MONGO_DEETS')
 
-database = client.QUIDAX
+client = MongoClient(MONGO_DEETS)
+
+database = client.quidax
 book_collection = database.books
 user_collection = database.users
 

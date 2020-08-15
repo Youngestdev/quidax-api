@@ -1,0 +1,5 @@
+fastapi
+pymongo
+passlib
+pydantic[email]
+python-multipart
