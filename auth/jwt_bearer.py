@@ -7,7 +7,7 @@ from fastapi import Request, HTTPException
 from helper.helpers import user_helper
 from models.Database import Database
 from models.model import TokenPayload
-from auth.encode_decode import decodeJWT
+from auth.encode_decode import decodeJWT, validateJWT
 from datetime import time, date
 from typing import Dict
 import time
@@ -24,36 +24,30 @@ class JWTBearer(HTTPBearer):
         if credentials:
             if not credentials.scheme == "Bearer":
                 print("Failed here.")
-                raise HTTPException(status_code=409, detail="You are not authorized to access this resource")
+                raise HTTPException(status_code=403, detail="Invalid authentication token")
 
             if not self.verify_jwt(credentials.credentials):
                 print("Failed here two")
-                raise HTTPException(status_code=401, detail="You are not authorized to access this resource")
+                raise HTTPException(status_code=403, detail="Invalid token or expired token")
 
             return credentials.credentials
         else:
             print("Failed here three")
-            raise HTTPException(status_code=401, detail="You are not authorized to access this resource")
+            raise HTTPException(status_code=403, detail="Invalid authorization token")
 
     def verify_jwt(self, jwtoken: str) -> bool:
         payload: TokenPayload = None
         isTokenValid: bool = False
 
         try:
-            payload = TokenPayload(**decodeJWT(jwtoken))
+            payload = decodeJWT(jwtoken)
         except:
             payload = None
 
-        if payload:
-            if time.mktime(date.today().timetuple()) >= payload.expires:
-                pass
-            else:
-                users: Dict[str, dict] = self.db.retrieve(user_helper) or {}
-
-            # I don't know if this is sane - should I be connecting to the database directly?
-            # Doesn't it defeat the purpose of the `users` variable above?
-
-            if self.db.get(ObjectId(payload.user_id)):
+        if validateJWT(payload):
+            users: Dict[str, dict] = self.db.retrieve(user_helper) or {}
+            # TODO: Fix the retrieval from database -> direct connections to the database should be avoided.
+            if self.db.get(ObjectId(payload['user_id'])):
                 isTokenValid = True
 
         return isTokenValid
