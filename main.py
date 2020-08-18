@@ -10,8 +10,8 @@ from passlib.context import CryptContext
 from pydantic import UUID4
 from starlette import status
 
-from database.database import insert_user, retrieve_users, retrieve_user, find_user, retrieve_books, retrieve_book, \
-    insert_book, remove_book
+from database.book import *
+from database.user import *
 from helper.model import Book, UserModel
 from helper.responses import success_response, error_response
 
@@ -70,15 +70,15 @@ def add_book(book: Book = Body(...)) -> Dict[str, Union[UUID4, Any]]:
     # Might later change it to form input when the frontend is ready.
     return insert_book(jsonable_encoder(book))
 
-# TODO:
-@app.put("/book/{id}", response_description="Book updated.", tags=["book"])
-def update_book(id: UUID4, book: Book) -> Book:
-    stored_book_data = static_books_db[id]
-    stored_book_data_model = Book(**stored_book_data)
-    updated_book_data = book.dict(exclude_unset=True)
-    updated_book_data = stored_book_data_model.copy(update=updated_book_data)
-    static_books_db[id] = jsonable_encoder(updated_book_data)
-    return updated_book_data
+# TODO: Write the update book method
+# @app.put("/book/{id}", response_description="Book updated.", tags=["book"])
+# def update_book(id: UUID4, book: Book) -> Book:
+#     stored_book_data = static_books_db[id]
+#     stored_book_data_model = Book(**stored_book_data)
+#     updated_book_data = book.dict(exclude_unset=True)
+#     updated_book_data = stored_book_data_model.copy(update=updated_book_data)
+#     static_books_db[id] = jsonable_encoder(updated_book_data)
+#     return updated_book_data
 
 
 @app.delete("/book/{id}", response_description="Book deleted.", tags=["book"])
