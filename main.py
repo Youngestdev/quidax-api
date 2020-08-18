@@ -12,14 +12,15 @@ from starlette import status
 from auth.jwt_bearer import JWTBearer
 from database.book import *
 from database.user import *
+from helper.responses import error_response
 from models.Database import Database
 from models.model import Book, UserModel
-from helper.responses import error_response
 
 app = FastAPI()
 hash_helper = CryptContext(schemes=["bcrypt"])
-bearer = JWTBearer(Database("user"))
+bearer = JWTBearer(Database())
 security = HTTPBasic()
+
 
 def validate_data(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, "Youngestdev")
@@ -33,26 +34,31 @@ def validate_data(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return True
 
+
 @app.get("/user/{id}", tags=["users"], response_description="User retrieved")
 def get_user(id) -> dict:
-    return retrieve_user(ObjectId(id)) # Fix the ObjectID stuff!
+    return retrieve_user(ObjectId(id))
+
 
 @app.get("/user", tags=["users"], response_description="Users retrieved")
 def get_users():
     return retrieve_users()
 
+
 @app.post("/user/new", tags=["users"], response_description="User Created")
 def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
-    if find_user(user.email):
-        return error_response("Email has been used to register", 409)
+    if find_user(user):
+        return error_response("Email or Username has been registered", 409)
     user.password = hash_helper.encrypt(user.password)
     return insert_user(jsonable_encoder(user))
+
 
 @app.get("/", tags=["book"])
 def read_root():
     return {"message": "Welcome to Quidax Book API, use the /docs route,"}
 
-@app.get("/book", response_description="Books retrieved.", tags=["book"], dependencies=[Depends(bearer)])
+
+@app.get("/book", response_description="Books retrieved.", tags=["book"])
 def get_books(*, q: Optional[str] = None) -> dict:
     # Implement a search that filter books based on a passed query, if any.
     return retrieve_books()
@@ -63,10 +69,11 @@ def read_book(id) -> Dict[str, Any]:
     return retrieve_book(id)
 
 
-@app.post("/book/", response_description="Book added into the shelf.", tags=["book"])
+@app.post("/book/", response_description="Book added into the shelf.", tags=["book"], dependencies=[Depends(bearer)])
 def add_book(book: Book = Body(...)) -> Dict[str, Union[UUID4, Any]]:
     # Might later change it to form input when the frontend is ready.
     return insert_book(jsonable_encoder(book))
+
 
 # TODO: Write the update book method
 # @app.put("/book/{id}", response_description="Book updated.", tags=["book"])
@@ -83,14 +90,3 @@ def add_book(book: Book = Body(...)) -> Dict[str, Union[UUID4, Any]]:
 def delete_book(id) -> dict:
     remove_book(id)
     return {"message": "Book with id {} successfully deleted".format(id)}
-
-
-"""
-The method below might be standalone - maybe - automatically triggered from the frontend
-or we might just use cloudinary to save the stress of uploading from the backend.
-"""
-
-
-# @app.post("/upload", tags=["book"])
-# def upload_book_cover(file: List[UploadFile] = File(...)) -> dict:
-#     return {"file": [f.filename for f in file]}
