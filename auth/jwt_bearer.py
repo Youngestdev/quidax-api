@@ -1,16 +1,15 @@
 # Code copied from github.com/overrideveloper/HowAreYouApi*
 
-from bson import ObjectId
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Request, HTTPException
+from typing import List
 
-from helper.helpers import user_helper
+from bson import ObjectId
+from fastapi import Request, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from auth.encode_decode import decodeJWT, validateJWT
 from models.Database import Database
 from models.model import TokenPayload
-from auth.encode_decode import decodeJWT, validateJWT
-from datetime import time, date
-from typing import Dict
-import time
+
 
 class JWTBearer(HTTPBearer):
     db: Database = None
@@ -45,9 +44,8 @@ class JWTBearer(HTTPBearer):
             payload = None
 
         if validateJWT(payload):
-            users: Dict[str, dict] = self.db.retrieve(user_helper) or {}
-            # TODO: Fix the retrieval from database -> direct connections to the database should be avoided.
-            if self.db.get(ObjectId(payload['user_id'])):
+            users: List = self.db.retrieve()
+            user_id = str(ObjectId(payload['user_id']))
+            if user_id in users:  # At the moment, this is the best I can do.
                 isTokenValid = True
-
         return isTokenValid
