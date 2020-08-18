@@ -2,25 +2,23 @@ import secrets
 from typing import Dict, Any, Union
 from typing import Optional
 
-from bson import ObjectId
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Depends
+from fastapi import FastAPI, HTTPException, Body, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
 from pydantic import UUID4
 from starlette import status
 
+from auth.jwt_bearer import JWTBearer
 from database.book import *
 from database.user import *
-from helper.model import Book, UserModel
-from helper.responses import success_response, error_response
+from models.Database import Database
+from models.model import Book, UserModel
+from helper.responses import error_response
 
 app = FastAPI()
 hash_helper = CryptContext(schemes=["bcrypt"])
-
-static_books_db: dict = {}
-users: dict = {}
-
+bearer = JWTBearer(Database("user"))
 security = HTTPBasic()
 
 def validate_data(credentials: HTTPBasicCredentials = Depends(security)):
@@ -54,7 +52,7 @@ def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
 def read_root():
     return {"message": "Welcome to Quidax Book API, use the /docs route,"}
 
-@app.get("/book", response_description="Books retrieved.", tags=["book"])
+@app.get("/book", response_description="Books retrieved.", tags=["book"], dependencies=[Depends(bearer)])
 def get_books(*, q: Optional[str] = None) -> dict:
     # Implement a search that filter books based on a passed query, if any.
     return retrieve_books()
