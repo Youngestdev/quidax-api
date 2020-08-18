@@ -1,5 +1,6 @@
 from typing import Optional, List
 
+from bson import ObjectId
 from pydantic import BaseModel, HttpUrl, EmailStr, Field, UUID4
 
 
@@ -48,3 +49,9 @@ class UserModel(BaseModel):
                 "password": "12345"
             }
         }
+
+
+class TokenPayload(BaseModel):
+    # Fix time back.
+    expires: float
+    user_id: str
