@@ -1,11 +1,14 @@
-import jwt
 import time
-from decouple import config
-from fastapi import HTTPException
-from models.model import TokenPayload
 from datetime import date
 
+import jwt
+from decouple import config
+from fastapi import HTTPException
+
+from models.model import TokenPayload
+
 JWT_SECRET = config('secret')
+
 
 def encodeJWT(user_id: str) -> str:
     # Set the expiry time.
@@ -15,12 +18,14 @@ def encodeJWT(user_id: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256").decode()
 
+
 def decodeJWT(token: str) -> dict:
     try:
         jwtoken = jwt.decode(token.encode(), JWT_SECRET, algorithms=["HS256"])
         return jwtoken
     except:
         return None
+
 
 # Validate the JWT token passed.
 
