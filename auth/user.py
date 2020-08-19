@@ -17,5 +17,5 @@ def validate_login(credentials: HTTPBasicCredentials = Depends(security)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
             )
-
-    return True
+        return True
+    return False
