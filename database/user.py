@@ -1,5 +1,4 @@
 from bson import ObjectId
-from pydantic import EmailStr
 
 from database.database import user_collection
 from helper.helpers import user_helper
@@ -22,8 +21,9 @@ def retrieve_user(id: ObjectId) -> dict:
     user = user_collection.find_one({"_id": id})
     return success_response(user_helper(user), 200, "User Retrieved") if user else success_response()
 
-def find_user(email: EmailStr) -> bool:
-    user = user_collection.find_one({"email": email})
-    if user:
+def find_user(user) -> bool:
+    user_email = user_collection.find_one({"email": user.email})
+    username = user_collection.find_one({"username": user.username})
+    if user_email or username:
         return True
     return False

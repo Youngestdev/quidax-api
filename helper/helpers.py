@@ -2,9 +2,11 @@ def user_helper(user) -> dict:
     return {
         "id": str(user['_id']),
         "username": user['username'],
-        "full_name": user['fullname'],
-        "user_email": user['email'],
+        # Let's protect people data haha !
+        # "full_name": user['fullname'],
+        # "user_email": user['email'],
     }
+
 
 def book_helper(book) -> dict:
     return {
