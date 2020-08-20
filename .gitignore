@@ -131,3 +131,7 @@ dmypy.json
 
 # jetbrains
 .idea/
+
+.vercel
+.env
+env
