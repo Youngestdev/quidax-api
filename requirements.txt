@@ -6,3 +6,4 @@ python-multipart
 python-decouple
 PyJWT
 uvicorn
+bcrypt
