@@ -7,6 +7,7 @@ from fastapi.security import HTTPBasicCredentials
 from passlib.context import CryptContext
 from pydantic import UUID4
 
+from auth.jwt_handler import signJWT
 from auth.user import validate_login
 from database.user import retrieve_user, retrieve_users, find_user, insert_user
 from helper.responses import error_response
@@ -37,5 +38,8 @@ def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
 @router.post("/", response_description="User Login Successfully")
 def user_login(user: HTTPBasicCredentials = Body(...)):
     if validate_login(user):
-        return {"message": "Login Successful"}
+        return {
+            "username": user.username,
+            "access_token": signJWT(user.username)
+        }
     return "End of a block because whew."
