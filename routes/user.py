@@ -7,23 +7,26 @@ from fastapi.security import HTTPBasicCredentials
 from passlib.context import CryptContext
 from pydantic import UUID4
 
+from auth.jwt_bearer import JWTBearer
 from auth.jwt_handler import signJWT
 from auth.user import validate_login
 from database.user import retrieve_user, retrieve_users, find_user, insert_user
 from helper.responses import error_response
+from models.Database import Database
 from models.model import UserModel
 
 router = APIRouter()
 
 hash_helper = CryptContext(schemes=["bcrypt"])
 
+user_bearer = JWTBearer(Database)
 
 @router.get("/{id}", response_description="User retrieved")
 def get_user(id) -> dict:
     return retrieve_user(ObjectId(id))
 
 
-@router.get("/", response_description="Users retrieved")
+@router.get("/", response_description="Users retrieved", dependencies=[Depends(user_bearer)])
 def get_users():
     return retrieve_users()
 
@@ -38,5 +41,8 @@ def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
 @router.post("/", response_description="User Login Successfully")
 def user_login(user: HTTPBasicCredentials = Body(...)):
     if validate_login(user):
-        return signJWT(user.username)
+        return {
+            "access_token": signJWT(user.username),
+            "username": user.username
+        }
     return "End of a block because whew."
