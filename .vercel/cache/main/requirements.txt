@@ -1,6 +1,0 @@
-fastapi
-pymongo
-passlib
-pydantic[email]
-python-multipart
-python-decouple
