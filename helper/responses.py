@@ -12,3 +12,8 @@ def error_response(data: str = "An Error Occurred", code: int = 400, message: st
         "code": code,
         "message": message
     }
+
+def token_response(token: str):
+    return {
+        "access_token": token
+    }

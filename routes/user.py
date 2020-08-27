@@ -6,7 +6,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBasicCredentials
 from passlib.context import CryptContext
 from pydantic import UUID4
-
 from auth.jwt_bearer import JWTBearer
 from auth.jwt_handler import signJWT
 from auth.user import validate_login
@@ -42,7 +41,7 @@ def create_user(user: UserModel) -> Dict[str, Union[UUID4, dict]]:
 def user_login(user: HTTPBasicCredentials = Body(...)):
     if validate_login(user):
         return {
-            "access_token": signJWT(user.username),
-            "username": user.username
+            "username": user.username,
+            "access_token": signJWT(user.username)
         }
     return "End of a block because whew."
